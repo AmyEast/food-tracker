@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Food tracker</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A5%AC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #EDF1EE;
+  --panel: #FFFFFF;
+  --ink: #16231F;
+  --muted: #5A6A63;
+  --line: #CDD7D2;
+  --track: #DCE4E0;
+  --iron: #B4442E;
+  --protein: #3D4FB0;
+  --sat: #7D5A9E;
+  --sol: #0E7C86;
+  --insol: #C98A12;
+  --unsplit: #9FB0A8;
+  --danger: #B3261E;
+  --focus: #1F5FD1;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #101715;
+    --panel: #17211E;
+    --ink: #E6EEEA;
+    --muted: #93A39C;
+    --line: #2A3833;
+    --track: #24322D;
+    --iron: #E0705A;
+    --protein: #8C9BF0;
+    --sat: #C3A3E0;
+    --sol: #4FC1CB;
+    --insol: #E2AE45;
+    --unsplit: #5F716A;
+    --danger: #F2877F;
+    --focus: #7FA8FF;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Schibsted Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+  padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+}
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; border-radius: 6px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+.wrap { max-width: 560px; margin: 0 auto; padding: 0 18px 80px; }
+.muted { color: var(--muted); }
+.small { font-size: .875rem; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 18px 0 6px; }
+.daynav { display: flex; align-items: center; gap: 4px; }
+.daylabel { min-width: 8.5rem; text-align: center; }
+.daylabel b { display: block; font-size: 1.15rem; font-weight: 650; letter-spacing: -.01em; }
+.daylabel span { font-size: .85rem; color: var(--muted); }
+.icon-btn {
+  width: 44px; height: 44px; display: grid; place-items: center;
+  background: none; border: 0; border-radius: 50%; font-size: 1.25rem; color: var(--ink);
+}
+.icon-btn:hover { background: var(--track); }
+.link-btn { background: none; border: 0; padding: 6px 2px; color: var(--muted); text-decoration: underline; text-underline-offset: 3px; }
+
+/* summary */
+.row { padding: 16px 0 14px; border-bottom: 1px solid var(--line); }
+.row-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.row-head .name { font-weight: 600; font-size: 1rem; }
+.row-head .val { font-size: 1.7rem; font-weight: 650; letter-spacing: -.02em; line-height: 1.1; }
+.row-head .val small { font-size: .9rem; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+.barwrap { position: relative; }
+.bar { height: 12px; border-radius: 6px; background: var(--track); display: flex; overflow: hidden; }
+.seg { height: 100%; transition: width .25s ease; }
+.tick { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--ink); border-radius: 1px; }
+.row-foot { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: .875rem; color: var(--muted); }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.key i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+.macros { display: flex; flex-wrap: wrap; gap: 4px 22px; padding: 14px 0 4px; font-size: .95rem; }
+.macros span b { font-weight: 650; }
+.macros .muted { margin-right: 4px; }
+
+/* add */
+.section-title { font-size: 1.05rem; font-weight: 650; margin: 28px 0 10px; letter-spacing: -.005em; }
+.searchbox {
+  width: 100%; padding: 13px 14px; border: 1.5px solid var(--line); border-radius: 12px;
+  background: var(--panel); font-size: 1rem;
+}
+.searchbox:focus-visible { border-color: var(--focus); outline-offset: 0; }
+.scope { display: flex; gap: 6px; margin: 10px 0 4px; flex-wrap: wrap; align-items: center; }
+.chip {
+  padding: 7px 13px; border-radius: 999px; border: 1.5px solid var(--line);
+  background: none; font-size: .9rem; min-height: 36px;
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.scope .link-btn { margin-left: auto; }
+
+.list { list-style: none; margin: 8px 0 0; padding: 0; background: var(--panel); border-radius: 14px; overflow: hidden; }
+.list li + li { border-top: 1px solid var(--line); }
+.item {
+  width: 100%; text-align: left; background: none; border: 0; padding: 13px 14px;
+  display: block; min-height: 52px;
+}
+.item:hover { background: var(--track); }
+.item .t { font-weight: 550; }
+.item .s { font-size: .85rem; color: var(--muted); margin-top: 1px; }
+.item .n { font-size: .85rem; margin-top: 3px; }
+.item.logged { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; }
+.item.logged .amt { font-size: .85rem; color: var(--muted); grid-column: 1; }
+.item.logged .kcal { grid-column: 2; grid-row: 1; font-weight: 600; }
+.item.logged .n { grid-column: 1 / -1; }
+.status { padding: 14px; font-size: .95rem; color: var(--muted); background: var(--panel); border-radius: 14px; margin-top: 8px; }
+.status button { margin-top: 6px; }
+.empty { padding: 4px 0; color: var(--muted); }
+
+/* dialogs */
+dialog {
+  border: 0; padding: 0; background: var(--panel); color: var(--ink);
+  width: 100%; max-width: 560px; margin: auto auto 0;
+  border-radius: 20px 20px 0 0; max-height: 92vh; overflow: auto;
+}
+@media (min-width: 600px) { dialog { margin: auto; border-radius: 20px; } }
+dialog::backdrop { background: rgba(10, 18, 15, .55); }
+.sheet { padding: 22px 20px calc(20px + env(safe-area-inset-bottom)); }
+.sheet h2 { margin: 0 0 2px; font-size: 1.2rem; font-weight: 650; letter-spacing: -.01em; }
+.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
+.fields.one { grid-template-columns: 1fr; }
+.field label { display: block; font-size: .875rem; color: var(--muted); margin-bottom: 4px; }
+.field input, .field select {
+  width: 100%; padding: 11px 12px; border: 1.5px solid var(--line); border-radius: 10px;
+  background: var(--bg); min-height: 46px;
+}
+.field input:focus-visible, .field select:focus-visible { border-color: var(--focus); outline-offset: 0; }
+.preview { display: grid; grid-template-columns: 1fr auto; gap: 6px 16px; margin: 6px 0 4px; font-size: .95rem; }
+.preview dt { color: var(--muted); }
+.preview dd { margin: 0; font-weight: 600; text-align: right; }
+.preview .sub dt { padding-left: 14px; }
+.note { font-size: .875rem; color: var(--muted); margin: 8px 0 0; }
+.actions { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
+.btn { padding: 12px 18px; border-radius: 12px; border: 1.5px solid var(--line); background: none; min-height: 46px; font-weight: 550; }
+.btn.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.btn.danger { color: var(--danger); border-color: transparent; margin-right: auto; }
+.btn.add { width: 100%; margin-top: 10px; }
+.sep { border: 0; border-top: 1px solid var(--line); margin: 18px 0; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: .9rem;
+  opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50;
+}
+.toast.show { opacity: 1; }
+.banner { background: var(--panel); border-left: 4px solid var(--insol); padding: 10px 12px; border-radius: 8px; font-size: .9rem; margin-top: 12px; }
+@media (prefers-reduced-motion: reduce) { .seg, .toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="daynav">
+      <button class="icon-btn" id="prevDay" aria-label="Previous day">&#8249;</button>
+      <div class="daylabel"><b id="dayTitle"></b><span id="daySub"></span></div>
+      <button class="icon-btn" id="nextDay" aria-label="Next day">&#8250;</button>
+    </div>
+    <button class="icon-btn" id="openSettings" aria-label="Settings">&#9881;</button>
+  </div>
+
+  <div id="storageWarn" class="banner" hidden>Browser storage is blocked, so entries won't be saved after you close this page. Use Export in Settings to keep a copy.</div>
+
+  <section id="summary" aria-label="Daily totals"></section>
+  <div class="macros" id="macros"></div>
+
+  <h2 class="section-title">Add food</h2>
+  <input class="searchbox" id="q" type="search" placeholder="Search foods, e.g. lentils, oats, spinach" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Search foods">
+  <div class="scope" role="group" aria-label="Where to search">
+    <button class="chip" data-scope="whole" aria-pressed="true">Whole foods</button>
+    <button class="chip" data-scope="brand" aria-pressed="false">Packaged</button>
+    <button class="chip" data-scope="all" aria-pressed="false">Both</button>
+    <button class="link-btn small" id="openManual">Enter manually</button>
+  </div>
+  <div id="results"></div>
+
+  <h2 class="section-title" id="logTitle">Logged</h2>
+  <div id="log"></div>
+</div>
+
+<!-- Portion dialog -->
+<dialog id="portionDlg" aria-labelledby="pName">
+  <form class="sheet" id="portionForm">
+    <h2 id="pName"></h2>
+    <div class="muted small" id="pSource"></div>
+    <div class="fields">
+      <div class="field"><label for="pQty">Amount</label><input id="pQty" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="pUnit">Unit</label><select id="pUnit"></select></div>
+    </div>
+    <div class="muted small" id="pGrams"></div>
+    <dl class="preview" id="pPreview"></dl>
+    <p class="note" id="pNote"></p>
+    <div class="actions">
+      <button type="button" class="btn danger" id="pRemove">Remove</button>
+      <button type="button" class="btn" id="pCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="pSave">Add to log</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Manual dialog -->
+<dialog id="manualDlg" aria-labelledby="mTitle">
+  <form class="sheet" id="manualForm">
+    <h2 id="mTitle">Enter a food manually</h2>
+    <p class="muted small" style="margin:2px 0 0">Values are for one serving. Use this for restaurant meals, labels, or anything the search misses.</p>
+    <div class="fields one">
+      <div class="field"><label for="mName">Name</label><input id="mName" required></div>
+    </div>
+    <div class="fields">
+      <div class="field"><label for="mKcal">Calories</label><input id="mKcal" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mProtein">Protein (g)</label><input id="mProtein" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mCarbs">Carbs (g)</label><input id="mCarbs" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mFat">Fat (g)</label><input id="mFat" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mSat">Saturated fat (g)</label><input id="mSat" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mFiber">Total fiber (g)</label><input id="mFiber" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mIron">Iron (mg)</label><input id="mIron" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mSol">Soluble fiber (g)</label><input id="mSol" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="mInsol">Insoluble fiber (g)</label><input id="mInsol" type="number" inputmode="decimal" min="0" step="any"></div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn" id="mCancel">Cancel</button>
+      <button type="submit" class="btn primary">Add to log</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Settings dialog -->
+<dialog id="settingsDlg" aria-labelledby="sTitle">
+  <form class="sheet" id="settingsForm">
+    <h2 id="sTitle">Settings</h2>
+    <div class="fields one">
+      <div class="field">
+        <label for="sKey">USDA API key</label>
+        <input id="sKey" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Leave blank to use the shared demo key">
+      </div>
+    </div>
+    <p class="note" style="margin-top:0">The demo key is rate limited and can stop working mid-day. A personal key is free and takes a minute: <a href="https://fdc.nal.usda.gov/api-key-signup" target="_blank" rel="noopener">fdc.nal.usda.gov/api-key-signup</a>. The key is stored only in this browser.</p>
+    <hr class="sep">
+    <div class="fields">
+      <div class="field"><label for="sProtein">Protein (g)</label><input id="sProtein" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="sIron">Iron (mg)</label><input id="sIron" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="sFiber">Total fiber (g)</label><input id="sFiber" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="sSol">Soluble fiber (g)</label><input id="sSol" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="sCal">Calories (0 hides target)</label><input id="sCal" type="number" inputmode="decimal" min="0" step="any"></div>
+      <div class="field"><label for="sSat">Saturated fat limit (g)</label><input id="sSat" type="number" inputmode="decimal" min="0" step="any"></div>
+    </div>
+    <hr class="sep">
+    <div class="actions" style="justify-content:flex-start;margin-top:0">
+      <button type="button" class="btn" id="exportBtn">Export log</button>
+      <button type="button" class="btn" id="importBtn">Import log</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+    <p class="note">Everything is saved in this browser on this device. Export a file to back it up or move it to another device.</p>
+    <div class="actions">
+      <button type="button" class="btn" id="sCancel">Cancel</button>
+      <button type="submit" class="btn primary">Save settings</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const dstr = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseDay = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const numOrNull = v => { const n = parseFloat(v); return Number.isFinite(n) ? n : null; };
+const fmt = (n, d) => {
+  if (n == null || !Number.isFinite(n)) return '\u2013';
+  const dec = d != null ? d : (Math.abs(n) >= 100 ? 0 : 1);
+  const r = Math.round(n * Math.pow(10, dec)) / Math.pow(10, dec);
+  return r.toLocaleString(undefined, { maximumFractionDigits: dec });
+};
+const nice = s => {
+  s = String(s || '').trim();
+  if (s && s === s.toUpperCase() && /[A-Z]/.test(s)) s = s.toLowerCase().replace(/(^|[\s(,-])([a-z])/g, (m, a, b) => a + b.toUpperCase());
+  return s;
+};
+
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+};
+let storageOK = true;
+try { localStorage.setItem('ft.test', '1'); localStorage.removeItem('ft.test'); } catch (e) { storageOK = false; }
+if (!storageOK) $('#storageWarn').hidden = false;
+
+/* ---------- state ---------- */
+const DEFAULTS = { apiKey: '', protein: 140, iron: 18, fiber: 30, soluble: 10, calories: 2400, satfat: 20, scope: 'whole' };
+const stored = store.get('ft.settings', {});
+let settings = Object.assign({}, DEFAULTS, stored);
+if (stored.satfat == null && !stored.calories) settings.calories = DEFAULTS.calories;
+let log = store.get('ft.log', {});
+let recent = store.get('ft.recent', []);
+let day = dstr(new Date());
+
+const persist = () => {
+  store.set('ft.settings', settings);
+  store.set('ft.log', log);
+  store.set('ft.recent', recent);
+};
+
+/* ---------- nutrition math ---------- */
+// per100 = { kcal, protein, carbs, fat, fiber, sol, insol, iron } per 100 g; null = not listed
+function scaled(e) {
+  const f = e.grams / 100, p = e.per100;
+  const m = k => (p[k] == null ? 0 : p[k] * f);
+  let fiber = p.fiber, sol = p.sol, insol = p.insol;
+  if (fiber == null && (sol != null || insol != null)) fiber = (sol || 0) + (insol || 0);
+  if (fiber != null) {
+    if (sol != null && insol == null) insol = Math.max(0, fiber - sol);
+    if (insol != null && sol == null) sol = Math.max(0, fiber - insol);
+  }
+  let F = (fiber || 0) * f, S = 0, I = 0, U = F;
+  if (sol != null && insol != null) {
+    S = sol * f; I = insol * f;
+    F = Math.max(F, S + I);
+    U = Math.max(0, F - S - I);
+  }
+  return { kcal: m('kcal'), protein: m('protein'), carbs: m('carbs'), fat: m('fat'), sat: m('sat'), iron: m('iron'), fiber: F, sol: S, insol: I, unsplit: U };
+}
+function totals(entries) {
+  const t = { kcal: 0, protein: 0, carbs: 0, fat: 0, sat: 0, iron: 0, fiber: 0, sol: 0, insol: 0, unsplit: 0 };
+  entries.forEach(e => { const s = scaled(e); for (const k in t) t[k] += s[k]; });
+  return t;
+}
+const unitOf = e => e.portions[e.unitIdx] || e.portions[e.portions.length - 1];
+function portionLabel(e) {
+  const u = unitOf(e);
+  if (u.grams === 1 && u.label === 'g') return `${fmt(e.qty, 1)} g`;
+  const g = Math.round(e.grams);
+  const hasG = /\(\d+(\.\d+)? g\)/.test(u.label) || (u.grams === 100 && u.label === 'serving');
+  return `${fmt(e.qty, 2)} \u00d7 ${u.label}${hasG ? '' : ` (${g} g)`}`;
+}
+
+/* ---------- summary ---------- */
+function simpleRow(name, value, target, unit, color) {
+  const pct = target > 0 ? Math.min(100, value / target * 100) : 0;
+  let foot = '';
+  if (target > 0) foot = value >= target ? 'Target met' : `${fmt(target - value)} ${unit} to go`;
+  return `<div class="row">
+    <div class="row-head"><span class="name">${name}</span><span class="val">${fmt(value)} <small>/ ${fmt(target)} ${unit}</small></span></div>
+    <div class="barwrap"><div class="bar" role="progressbar" aria-label="${name}" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${Math.round(value * 10) / 10}"><div class="seg" style="width:${pct}%;background:${color}"></div></div></div>
+    <div class="row-foot"><span>${foot}</span></div>
+  </div>`;
+}
+function limitRow(name, value, limit, unit, color) {
+  const over = limit > 0 && value > limit;
+  const pct = limit > 0 ? Math.min(100, value / limit * 100) : 0;
+  const foot = limit > 0 ? (over ? `Over the limit by ${fmt(value - limit)} ${unit}` : `${fmt(limit - value)} ${unit} under the limit`) : '';
+  return `<div class="row">
+    <div class="row-head"><span class="name">${name}</span><span class="val">${fmt(value)} <small>/ ${fmt(limit)} ${unit} limit</small></span></div>
+    <div class="barwrap"><div class="bar" role="progressbar" aria-label="${name}" aria-valuemin="0" aria-valuemax="${limit}" aria-valuenow="${Math.round(value * 10) / 10}"><div class="seg" style="width:${pct}%;background:${over ? 'var(--danger)' : color}"></div></div></div>
+    <div class="row-foot"><span>${foot}</span></div>
+  </div>`;
+}
+function fiberRow(t) {
+  const target = settings.fiber, solT = settings.soluble;
+  let parts = [t.sol, t.insol, t.unsplit].map(x => target > 0 ? x / target * 100 : 0);
+  const sum = parts.reduce((a, b) => a + b, 0);
+  if (sum > 100) parts = parts.map(p => p * 100 / sum);
+  const tick = target > 0 && solT > 0 ? Math.min(100, solT / target * 100) : null;
+  let foot = target > 0 ? (t.fiber >= target ? 'Target met' : `${fmt(target - t.fiber)} g to go`) : '';
+  return `<div class="row">
+    <div class="row-head"><span class="name">Fiber</span><span class="val">${fmt(t.fiber)} <small>/ ${fmt(target)} g</small></span></div>
+    <div class="barwrap">
+      <div class="bar" role="progressbar" aria-label="Fiber" aria-valuemin="0" aria-valuemax="${target}" aria-valuenow="${Math.round(t.fiber * 10) / 10}">
+        <div class="seg" style="width:${parts[0]}%;background:var(--sol)"></div>
+        <div class="seg" style="width:${parts[1]}%;background:var(--insol)"></div>
+        <div class="seg" style="width:${parts[2]}%;background:var(--unsplit)"></div>
+      </div>
+      ${tick != null ? `<div class="tick" style="left:calc(${tick}% - 1px)" title="Soluble fiber target"></div>` : ''}
+    </div>
+    <div class="row-foot">
+      <span class="key"><i style="background:var(--sol)"></i>Soluble ${fmt(t.sol)}${solT > 0 ? ` / ${fmt(solT)}` : ''} g</span>
+      <span class="key"><i style="background:var(--insol)"></i>Insoluble ${fmt(t.insol)} g</span>
+      ${t.unsplit > 0.05 ? `<span class="key"><i style="background:var(--unsplit)"></i>Not split ${fmt(t.unsplit)} g</span>` : ''}
+    </div>
+    <div class="row-foot"><span>${foot}${tick != null ? (foot ? ', ' : '') + 'line marks the soluble target' : ''}</span></div>
+  </div>`;
+}
+function renderSummary() {
+  const t = totals(log[day] || []);
+  $('#summary').innerHTML =
+    simpleRow('Protein', t.protein, settings.protein, 'g', 'var(--protein)') +
+    simpleRow('Iron', t.iron, settings.iron, 'mg', 'var(--iron)') +
+    fiberRow(t) +
+    limitRow('Saturated fat', t.sat, settings.satfat, 'g', 'var(--sat)');
+  $('#macros').innerHTML =
+    `<span><span class="muted">Calories</span><b>${fmt(t.kcal, 0)}</b>${settings.calories > 0 ? `<span class="muted"> / ${fmt(settings.calories, 0)}</span>` : ''}</span>` +
+    `<span><span class="muted">Carbs</span><b>${fmt(t.carbs)} g</b></span>` +
+    `<span><span class="muted">Fat</span><b>${fmt(t.fat)} g</b></span>`;
+}
+
+/* ---------- day header ---------- */
+function renderHeader() {
+  const d = parseDay(day), today = new Date();
+  const diff = Math.round((new Date(today.getFullYear(), today.getMonth(), today.getDate()) - d) / 86400000);
+  const long = d.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
+  $('#dayTitle').textContent = diff === 0 ? 'Today' : diff === 1 ? 'Yesterday' : d.toLocaleDateString(undefined, { weekday: 'long' });
+  $('#daySub').textContent = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  $('#nextDay').disabled = diff <= 0;
+  $('#nextDay').style.opacity = diff <= 0 ? .3 : 1;
+  $('#logTitle').textContent = diff === 0 ? 'Logged today' : `Logged on ${long}`;
+}
+
+/* ---------- log list ---------- */
+function nutLine(s) {
+  return `<span style="color:var(--protein)">${fmt(s.protein)} g protein</span>, <span style="color:var(--iron)">${fmt(s.iron)} mg iron</span>, <span style="color:var(--sol)">${fmt(s.fiber)} g fiber</span>`;
+}
+function renderLog() {
+  const entries = log[day] || [];
+  if (!entries.length) { $('#log').innerHTML = '<p class="empty">Nothing logged yet. Search for a food above.</p>'; return; }
+  $('#log').innerHTML = '<ul class="list">' + entries.map(e => {
+    const s = scaled(e);
+    return `<li><button class="item logged" data-id="${esc(e.id)}">
+      <span class="t">${esc(e.name)}</span><span class="kcal">${fmt(s.kcal, 0)} kcal</span>
+      <span class="amt">${esc(portionLabel(e))}</span>
+      <span class="n">${nutLine(s)}</span></button></li>`;
+  }).join('') + '</ul>';
+}
+
+/* ---------- USDA search ---------- */
+const N = {
+  kcal: n => [1008, 2047, 2048].includes(n.nutrientId) || (/^energy/i.test(n.nutrientName || '') && /kcal/i.test(n.unitName || '')),
+  protein: n => n.nutrientId === 1003 || /^protein$/i.test(n.nutrientName || ''),
+  sat: n => n.nutrientId === 1258 || /^fatty acids, total saturated/i.test(n.nutrientName || ''),
+  fat: n => n.nutrientId === 1004 || /^total lipid/i.test(n.nutrientName || ''),
+  carbs: n => n.nutrientId === 1005 || /^carbohydrate, by difference/i.test(n.nutrientName || ''),
+  fiber: n => n.nutrientId === 1079 || /^fiber, total dietary/i.test(n.nutrientName || ''),
+  sol: n => n.nutrientId === 1082 || (/soluble/i.test(n.nutrientName || '') && !/insoluble/i.test(n.nutrientName || '') && /fib/i.test(n.nutrientName || '')),
+  insol: n => n.nutrientId === 1084 || (/insoluble/i.test(n.nutrientName || '') && /fib/i.test(n.nutrientName || '')),
+  iron: n => n.nutrientId === 1089 || /^iron, fe/i.test(n.nutrientName || '')
+};
+function extract(food) {
+  const list = food.foodNutrients || [], out = {};
+  for (const k in N) {
+    const hit = list.find(n => N[k](n) && typeof n.value === 'number');
+    out[k] = hit ? hit.value : null;
+  }
+  return out;
+}
+function fromApi(f) {
+  const per100 = extract(f), portions = [];
+  (f.foodMeasures || []).forEach(m => {
+    const label = String(m.disseminationText || '').trim(), g = m.gramWeight;
+    if (!label || /not specified/i.test(label) || !(g > 0) || portions.some(p => p.label === label)) return;
+    portions.push({ label, grams: g });
+  });
+  if (f.servingSize > 0 && /^(g|grm|gm|ml|mlt)$/i.test(String(f.servingSize && f.servingSizeUnit || ''))) {
+    const size = Math.round(f.servingSize * 10) / 10;
+    const label = f.householdServingFullText ? `${f.householdServingFullText} (${size} g)` : `1 serving (${size} g)`;
+    portions.unshift({ label, grams: f.servingSize });
+  }
+  const trimmed = portions.slice(0, 8);
+  trimmed.push({ label: 'g', grams: 1 });
+  const src = { 'SR Legacy': 'USDA reference', 'Foundation': 'USDA foundation', 'Survey (FNDDS)': 'USDA prepared foods', 'Branded': nice(f.brandName || f.brandOwner || 'Packaged') };
+  return { name: nice(f.description) || 'Unnamed food', source: src[f.dataType] || f.dataType || '', per100, portions: trimmed };
+}
+
+let results = [], searchCtl = null, searchTimer = null, searchState = 'idle', searchMsg = '';
+function scopeTypes() {
+  if (settings.scope === 'brand') return 'Branded';
+  if (settings.scope === 'all') return 'Foundation,SR Legacy,Survey (FNDDS),Branded';
+  return 'Foundation,SR Legacy,Survey (FNDDS)';
+}
+async function runSearch(q) {
+  q = q.trim();
+  if (q.length < 2) { searchState = 'idle'; renderResults(); return; }
+  if (searchCtl) searchCtl.abort();
+  searchCtl = new AbortController();
+  searchState = 'loading'; renderResults();
+  const url = new URL('https://api.nal.usda.gov/fdc/v1/foods/search');
+  url.searchParams.set('api_key', settings.apiKey.trim() || 'DEMO_KEY');
+  url.searchParams.set('query', q);
+  url.searchParams.set('pageSize', '20');
+  url.searchParams.set('dataType', scopeTypes());
+  try {
+    const r = await fetch(url, { signal: searchCtl.signal });
+    if (r.status === 403 || r.status === 401) throw { msg: 'The USDA API rejected the key. Check it in Settings.', settings: true };
+    if (r.status === 429) throw { msg: 'USDA rate limit reached. A personal key (free) lifts the limit.', settings: true };
+    if (!r.ok) throw { msg: `USDA search failed (${r.status}). Try again in a moment.` };
+    const data = await r.json();
+    results = (data.foods || []).map(fromApi);
+    searchState = results.length ? 'list' : 'empty';
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;
+    searchState = 'error';
+    searchMsg = err && err.msg ? err : { msg: 'Could not reach USDA. Check your connection.' };
+  }
+  renderResults();
+}
+function per100Line(p) {
+  const bits = [`${fmt(p.kcal, 0)} kcal`, `${fmt(p.protein)} g protein`, `${fmt(p.fiber)} g fiber`, `${fmt(p.iron)} mg iron`];
+  return 'per 100 g: ' + bits.join(', ');
+}
+function renderResults() {
+  const box = $('#results');
+  if (searchState === 'loading') { box.innerHTML = '<div class="status">Searching\u2026</div>'; return; }
+  if (searchState === 'error') {
+    box.innerHTML = `<div class="status">${esc(searchMsg.msg)}${searchMsg.settings ? '<br><button class="link-btn" data-act="settings">Open settings</button>' : ''}</div>`;
+    return;
+  }
+  if (searchState === 'empty') {
+    box.innerHTML = `<div class="status">No matches${settings.scope === 'whole' ? '. For brand-name products, switch to Packaged.' : '.'}<br><button class="link-btn" data-act="manual">Enter it manually</button></div>`;
+    return;
+  }
+  if (searchState === 'list') {
+    box.innerHTML = '<ul class="list">' + results.map((r, i) => `<li><button class="item" data-i="${i}">
+      <div class="t">${esc(r.name)}</div><div class="s">${esc(r.source)}</div><div class="n">${per100Line(r.per100)}</div></button></li>`).join('') + '</ul>';
+    return;
+  }
+  // idle: show recents
+  if (!recent.length) { box.innerHTML = ''; return; }
+  box.innerHTML = '<p class="muted small" style="margin:12px 0 0">Recent</p><ul class="list">' + recent.slice(0, 8).map((r, i) => `<li><button class="item" data-r="${i}">
+    <div class="t">${esc(r.name)}</div></button></li>`).join('') + '</ul>';
+}
+
+/* ---------- portion dialog ---------- */
+const pDlg = $('#portionDlg');
+let pick = null; // { mode, id, name, source, per100, portions, unitIdx, qty }
+function openPortion(p) {
+  pick = p;
+  $('#pName').textContent = p.name;
+  $('#pSource').textContent = p.source || '';
+  $('#pUnit').innerHTML = p.portions.map((u, i) => `<option value="${i}">${esc(u.label)}</option>`).join('');
+  $('#pUnit').value = String(p.unitIdx);
+  $('#pQty').value = p.qty;
+  $('#pSave').textContent = p.mode === 'edit' ? 'Save' : 'Add to log';
+  $('#pRemove').hidden = p.mode !== 'edit';
+  updatePreview();
+  pDlg.showModal();
+}
+function pickGrams() {
+  const q = numOrNull($('#pQty').value) || 0;
+  return q * pick.portions[Number($('#pUnit').value)].grams;
+}
+function updatePreview() {
+  const g = pickGrams(), f = g / 100, p = pick.per100;
+  const v = (k, d) => p[k] == null ? '\u2013' : fmt(p[k] * f, d);
+  $('#pGrams').textContent = `${fmt(g, 0)} g total`;
+  const hasSplit = p.sol != null || p.insol != null;
+  $('#pPreview').innerHTML =
+    `<dt>Calories</dt><dd>${v('kcal', 0)}</dd>
+     <dt>Protein</dt><dd>${v('protein')} g</dd>
+     <dt>Carbs</dt><dd>${v('carbs')} g</dd>
+     <dt>Fat</dt><dd>${v('fat')} g</dd>
+     ${p.sat != null ? `<dt class="sub">Saturated</dt><dd>${v('sat')} g</dd>` : ''}
+     <dt>Fiber</dt><dd>${v('fiber')} g</dd>
+     ${hasSplit ? `<dt class="sub">Soluble</dt><dd>${v('sol')} g</dd><dt class="sub">Insoluble</dt><dd>${v('insol')} g</dd>` : ''}
+     <dt>Iron</dt><dd>${v('iron')} mg</dd>`;
+  const notes = [];
+  if (p.sat == null && p.fat != null) notes.push('Saturated fat isn\u2019t listed for this food.');
+  if (p.iron == null) notes.push('No iron value on file for this food, so it adds 0 mg.');
+  if (p.fiber == null && !hasSplit) notes.push('No fiber value on file for this food.');
+  else if (!hasSplit) notes.push('Soluble and insoluble aren\u2019t listed for this food. Its fiber counts toward the total and shows as \u201cnot split.\u201d');
+  $('#pNote').textContent = notes.join(' ');
+}
+$('#pQty').addEventListener('input', updatePreview);
+$('#pUnit').addEventListener('change', () => {
+  const u = pick.portions[Number($('#pUnit').value)], q = numOrNull($('#pQty').value) || 0;
+  if (u.grams === 1 && q <= 10) $('#pQty').value = 100;
+  else if (u.grams !== 1 && q >= 50) $('#pQty').value = 1;
+  updatePreview();
+});
+$('#pCancel').addEventListener('click', () => pDlg.close());
+$('#pRemove').addEventListener('click', () => {
+  log[day] = (log[day] || []).filter(e => e.id !== pick.id);
+  persist(); pDlg.close(); renderAll(); toast('Removed');
+});
+$('#portionForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const qty = numOrNull($('#pQty').value);
+  if (!(qty > 0)) { $('#pQty').focus(); return; }
+  const unitIdx = Number($('#pUnit').value);
+  const entry = {
+    id: pick.mode === 'edit' ? pick.id : uid(),
+    name: pick.name, per100: pick.per100, portions: pick.portions, unitIdx, qty,
+    grams: qty * pick.portions[unitIdx].grams
+  };
+  const list = log[day] = log[day] || [];
+  if (pick.mode === 'edit') {
+    const i = list.findIndex(e => e.id === pick.id);
+    if (i >= 0) list[i] = entry; else list.push(entry);
+  } else {
+    list.push(entry);
+    recent = [{ name: pick.name, source: pick.source, per100: pick.per100, portions: pick.portions }]
+      .concat(recent.filter(r => r.name !== pick.name)).slice(0, 30);
+  }
+  persist(); pDlg.close(); renderAll(); toast(pick.mode === 'edit' ? 'Saved' : 'Added');
+});
+
+function defaultPick(food) {
+  const first = food.portions[0];
+  const gramsOnly = first.grams === 1 && first.label === 'g';
+  return { mode: 'add', name: food.name, source: food.source, per100: food.per100, portions: food.portions, unitIdx: 0, qty: gramsOnly ? 100 : 1 };
+}
+
+/* ---------- manual dialog ---------- */
+const mDlg = $('#manualDlg');
+$('#openManual').addEventListener('click', openManual);
+function openManual() { $('#manualForm').reset(); mDlg.showModal(); }
+$('#mCancel').addEventListener('click', () => mDlg.close());
+$('#manualForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const g = id => numOrNull($('#' + id).value);
+  const per100 = { kcal: g('mKcal'), protein: g('mProtein'), carbs: g('mCarbs'), fat: g('mFat'), sat: g('mSat'), fiber: g('mFiber'), sol: g('mSol'), insol: g('mInsol'), iron: g('mIron') };
+  const food = { name: $('#mName').value.trim(), source: 'Manual entry', per100, portions: [{ label: 'serving', grams: 100 }] };
+  if (!food.name) return;
+  const entry = { id: uid(), name: food.name, per100, portions: food.portions, unitIdx: 0, qty: 1, grams: 100 };
+  (log[day] = log[day] || []).push(entry);
+  recent = [{ name: food.name, source: food.source, per100, portions: food.portions }].concat(recent.filter(r => r.name !== food.name)).slice(0, 30);
+  persist(); mDlg.close(); renderAll(); toast('Added');
+});
+
+/* ---------- settings dialog ---------- */
+const sDlg = $('#settingsDlg');
+function openSettings() {
+  $('#sKey').value = settings.apiKey;
+  $('#sProtein').value = settings.protein; $('#sIron').value = settings.iron;
+  $('#sFiber').value = settings.fiber; $('#sSol').value = settings.soluble; $('#sCal').value = settings.calories; $('#sSat').value = settings.satfat;
+  sDlg.showModal();
+}
+$('#openSettings').addEventListener('click', openSettings);
+$('#sCancel').addEventListener('click', () => sDlg.close());
+$('#settingsForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const n = (id, d) => { const v = numOrNull($('#' + id).value); return v == null || v < 0 ? d : v; };
+  settings.apiKey = $('#sKey').value.trim();
+  settings.protein = n('sProtein', DEFAULTS.protein); settings.iron = n('sIron', DEFAULTS.iron);
+  settings.fiber = n('sFiber', DEFAULTS.fiber); settings.soluble = n('sSol', DEFAULTS.soluble); settings.calories = n('sCal', 0); settings.satfat = n('sSat', DEFAULTS.satfat);
+  persist(); sDlg.close(); renderAll(); toast('Settings saved');
+});
+$('#exportBtn').addEventListener('click', () => {
+  const s = Object.assign({}, settings); delete s.apiKey;
+  const blob = new Blob([JSON.stringify({ version: 1, settings: s, log, recent }, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `food-log-${dstr(new Date())}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async ev => {
+  const file = ev.target.files[0]; ev.target.value = '';
+  if (!file) return;
+  try {
+    const data = JSON.parse(await file.text());
+    if (!data || typeof data.log !== 'object') throw new Error('bad file');
+    const days = Object.keys(data.log);
+    if (!confirm(`Import ${days.length} day(s)? Days in the file replace matching days here.`)) return;
+    days.forEach(d => { log[d] = data.log[d]; });
+    if (Array.isArray(data.recent)) recent = data.recent.concat(recent.filter(r => !data.recent.some(x => x.name === r.name))).slice(0, 30);
+    if (data.settings) { const key = settings.apiKey; settings = Object.assign({}, settings, data.settings, { apiKey: key }); }
+    persist(); sDlg.close(); renderAll(); toast('Imported');
+  } catch (e) { toast('Could not read that file'); }
+});
+
+/* ---------- wiring ---------- */
+$('#q').addEventListener('input', ev => {
+  clearTimeout(searchTimer);
+  const v = ev.target.value;
+  searchTimer = setTimeout(() => runSearch(v), 350);
+});
+document.querySelectorAll('.chip').forEach(b => b.addEventListener('click', () => {
+  settings.scope = b.dataset.scope; persist(); renderScope();
+  if ($('#q').value.trim().length >= 2) runSearch($('#q').value);
+}));
+function renderScope() {
+  document.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.scope === settings.scope)));
+}
+$('#results').addEventListener('click', ev => {
+  const act = ev.target.closest('[data-act]');
+  if (act) { act.dataset.act === 'settings' ? openSettings() : openManual(); return; }
+  const b = ev.target.closest('.item'); if (!b) return;
+  if (b.dataset.i != null) openPortion(defaultPick(results[Number(b.dataset.i)]));
+  else if (b.dataset.r != null) openPortion(defaultPick(recent[Number(b.dataset.r)]));
+});
+$('#log').addEventListener('click', ev => {
+  const b = ev.target.closest('.item'); if (!b) return;
+  const e = (log[day] || []).find(x => x.id === b.dataset.id); if (!e) return;
+  openPortion({ mode: 'edit', id: e.id, name: e.name, source: '', per100: e.per100, portions: e.portions, unitIdx: e.unitIdx, qty: e.qty });
+});
+const shiftDay = n => { const d = parseDay(day); d.setDate(d.getDate() + n); day = dstr(d); renderAll(); };
+$('#prevDay').addEventListener('click', () => shiftDay(-1));
+$('#nextDay').addEventListener('click', () => shiftDay(1));
+$('#dayTitle').addEventListener('click', () => { day = dstr(new Date()); renderAll(); });
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+function renderAll() { renderHeader(); renderSummary(); renderLog(); renderScope(); renderResults(); }
+renderAll();
+})();
+</script>
+</body>
+</html>
